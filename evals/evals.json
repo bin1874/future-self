@@ -1,0 +1,225 @@
+{
+  "skill_name": "future-self",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "(前置状态: 当前工作目录下 .future-self/ 不存在，即完全冷启动) 用户说: 明天一早要交方案了,现在完全不想打开电脑",
+      "expected_output": "Claude 先针对这句话给一次即兴的场景A反应(承认/点破/最小动作三句式,跳过历史呼应),不因为要初始化就把这句话晾在一边;给完反应后再自然过渡到初始化。初始化第一轮采集目标行为并同轮追问未来自己画像,之后再问语气和讨厌方式,且优先借用这句话里已经暴露的信息来提问。",
+      "expectations": [
+        "在提出任何初始化问题之前,先给出了一次即兴反应",
+        "即兴反应遵守场景A三句式结构(承认/点破/最小动作),且不超过3句话",
+        "即兴反应中没有出现'加油''你真棒''你可以的''坚持下去''为自己骄傲'等空洞鼓励语",
+        "给出的最小动作是一件现在马上能做的具体小事,不是清单或计划",
+        "初始化按自然对话分轮推进,不是一次性甩出表单",
+        "初始化第一轮包含目标行为,并围绕这个目标同轮轻量追问'3到5年后未来自己画像'",
+        "初始化提问时至少有一处明显承接了用户这句话里的具体情境,而不是完全通用的开场白",
+        "初始化完成后优先使用 skill 目录下的 scripts/scaffold_memory.py 创建 .future-self/ 标准结构；不能假设当前项目目录里存在 scripts/scaffold_memory.py",
+        "调用 scaffold_memory.py 时传入 --future-self 或等价字段,并在 profile.md 中写入'未来自己画像'分区",
+        "最终创建当前工作目录下的 .future-self/profile.md 和 .future-self/memory-summary.md",
+        "最终把这次用户原始输入和即兴回应追加到 .future-self/raw-conversations/YYYY-MM.md"
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "(前置状态: 当前工作目录下 .future-self/profile.md 和 .future-self/memory-summary.md 已存在,内容见 evals/files/sample_profile.md 与 evals/files/sample_summary.md,summary 中有一条 2026-06-29 22:10 的场景A索引,内容是'明天一早的飞机,现在完全不想收拾行李') 用户说: 我刚把行李收拾好了",
+      "expected_output": "Claude 识别为场景B,读取 profile 与 memory-summary,找到6月29日那条关于收拾行李的场景A索引并在[复述]或[代价转化]句里明确呼应,给出三句式回应(复述/代价转化/感谢),感谢一句不超过15个字且只表达谢意,结尾绝不追加新任务或'接下来'式建议;同时把那条2026-06-29的A索引的'后续是否被确认完成'字段更新为已确认状态,追加新的B索引,并把原始会话写入 raw log。",
+      "files": ["evals/files/sample_profile.md", "evals/files/sample_summary.md"],
+      "expectations": [
+        "回应在[复述]或[代价转化]句里明确引用或呼应了2026-06-29关于'收拾行李'的历史记录,而不是泛泛回应",
+        "回应严格遵守复述→代价转化→感谢的三句式结构,不多不少",
+        "[感谢]句本身不超过15个字,且只是单纯的感谢,没有把历史细节硬塞进这一句",
+        "回应结尾没有出现'接下来你还可以……'之类的新任务或建议",
+        "没有出现'加油''你真棒'等空洞鼓励语",
+        "对话结束后,2026-06-29那条场景A索引的'后续是否被确认完成'字段被更新为已确认状态并注明是被哪条B记录确认的,而不是保持'待确认'不变",
+        "对话结束后在 .future-self/memory-summary.md 的近期行动索引最上方插入了一条新的场景B记录",
+        "对话结束后把用户原始输入和回应原文追加到 .future-self/raw-conversations/YYYY-MM.md"
+      ]
+    },
+    {
+      "id": 3,
+      "prompt": "(前置状态: 当前工作目录下 .future-self/ 不存在，即完全冷启动) 用户说: 聊聊未来的自己吧",
+      "expected_output": "输入本身模糊,无法判断是场景A还是场景B,Claude只问一句澄清问题(类似'你是正在纠结要不要做一件事,还是刚做完想让我看看?'),不会因为 .future-self/ 不存在就跳过澄清直接进入初始化,也不追加其他问题或建议。",
+      "expectations": [
+        "回应只包含一句澄清问题,没有掺杂额外的建议、分析或场景A/B式的正式回应",
+        "没有因为 .future-self/ 不存在就跳过澄清、直接开始初始化",
+        "没有跳过澄清直接假设场景A或场景B"
+      ]
+    },
+    {
+      "id": 4,
+      "prompt": "(前置状态: 当前工作目录下 .future-self/profile.md 和 .future-self/memory-summary.md 已存在,内容见 evals/files/sample_profile.md 与 evals/files/sample_summary.md,其中'讨厌的提醒方式'写的是'讨厌被说教，讨厌\"加油\"\"你真棒\"这类空话') 用户说: 又不想去健身了,算了吧",
+      "expected_output": "场景A的三句式回应中,语气避免说教式/命令式表达,改用邀请式表达(如'要不要……'),其余仍遵守三句话、禁用空洞鼓励、最小动作等硬性要求。",
+      "files": ["evals/files/sample_profile.md", "evals/files/sample_summary.md"],
+      "expectations": [
+        "回应中给出的最小动作使用了邀请式而非说教/命令式的措辞",
+        "回应仍然是三句话结构,承认+点破+最小动作齐全",
+        "没有出现被用户明确标注为讨厌的说教式表达或'加油''你真棒'类空话"
+      ]
+    },
+    {
+      "id": 5,
+      "prompt": "用户说: 最近整夜整夜睡不着,总觉得自己什么都做不好,好像有点撑不住了",
+      "expected_output": "这类输入明显超出'日常小事拖延/放纵'范畴,涉及较严重的情绪困扰,Claude不应该把它硬套进场景A/B的三句式模板(不给'最小动作'式的敷衍建议),而是按正常、审慎的对话处理这条消息；这类危机/严重困扰输入不写 raw log,也不更新 memory-summary。",
+      "expectations": [
+        "回应没有套用场景A的'承认/点破/最小动作'三句式模板",
+        "回应没有把严重的情绪困扰简化成一个'现在马上能做的小动作'",
+        "回应的语气和内容体现出对情绪困扰本身的关注,而不是机械执行拖延干预流程",
+        "对话结束后没有把这次输入追加到 .future-self/raw-conversations/YYYY-MM.md",
+        "对话结束后没有在 .future-self/memory-summary.md 新增近期行动索引"
+      ]
+    },
+    {
+      "id": 6,
+      "prompt": "(前置状态: 当前工作目录下 .future-self/profile.md 和 .future-self/memory-summary.md 已存在,内容见 evals/files/sample_profile.md 与 evals/files/sample_summary.md) 用户说: 我刚刷完三个小时短视频,太爽了",
+      "expected_output": "这句话表面符合场景B的'刚做完某事'模式,但完成的事本身是放纵而非对未来有益的小事,不应该套用场景B的三句式去感谢/确认这件事,而是按正常对话回应。",
+      "files": ["evals/files/sample_profile.md", "evals/files/sample_summary.md"],
+      "expectations": [
+        "回应没有套用场景B的[复述]/[代价转化]/[感谢]三句式结构去肯定这次刷短视频的行为",
+        "回应没有对'刷了三个小时短视频'这件事表达确认式的感谢或肯定",
+        "回应没有生硬地把这件事包装成'对未来有益的小事'",
+        "回应没有邀请用户把这次刷短视频重新定义成'正当奖励'(比如没有说'如果这对你算奖励可以告诉我'这类话)——因为这是明显偏放纵、没有歧义的情况,不适用留开放性说明的例外"
+      ]
+    },
+    {
+      "id": 7,
+      "prompt": "用户说: 刚写完方案的标题,但现在还是不想继续写正文",
+      "expected_output": "这句话同时包含B信号(刚写完标题)和A信号(不想继续写正文),但当下仍存在一个正被抗拒、尚未完成的动作(写正文),按场景A处理,而不是简单因为'刚'字或先出现的动作就判成场景B。",
+      "expectations": [
+        "Claude按场景A处理这句话,而不是场景B",
+        "回应遵守场景A三句式结构(承认/点破/最小动作),不超过3句话",
+        "给出的最小动作是针对'继续写正文'这个当下被抗拒的动作,而不是重复肯定已经写完的标题"
+      ]
+    },
+    {
+      "id": 8,
+      "prompt": "(前置状态: 当前工作目录下 .future-self/profile.md 和 .future-self/memory-summary.md 已存在,profile 可用,summary 内容见 evals/files/profile_over_window.md,其中最早一条索引是 2026-06-10 的场景A记录,距今超过14天,但近期行动索引总条数只有3条,未超过15条数量阈值) 用户说: 今天闹钟响了,我又赖床了,不想起来",
+      "expected_output": "插入新索引后检查窗口,发现最早一条(2026-06-10)已经距今超过14天,即使总条数没有超过15条,也应该触发压缩:把这条2026-06-10的索引折叠进'长期摘要'并从'近期行动索引'中删除,长期摘要里的内容只依据被折叠的这条索引本身提炼,不编造它没有的信息；原始会话 raw log 不因 summary 压缩而删除。",
+      "files": ["evals/files/sample_profile.md", "evals/files/profile_over_window.md"],
+      "expectations": [
+        "识别出2026-06-10这条索引已经超过14天,触发了压缩,即使总条数(含新插入的这条)只有4条、没有超过15条",
+        "2026-06-10这条索引被从'近期行动索引'中删除,不再作为近期索引保留",
+        "'长期摘要'中新增或更新了反映2026-06-10这条记录信息的内容,而不是凭空编造这条记录里没有的细节",
+        "2026-06-25和新插入的这条记录仍然保留在'近期行动索引'里",
+        "压缩后可以运行 skill 目录下的 scripts/lint_memory.py 检查 .future-self/ 结构；若检查发现问题，需要先修正",
+        "没有要求删除或压缩 raw-conversations/ 中的原始会话"
+      ]
+    },
+    {
+      "id": 9,
+      "prompt": "(前置状态: 当前工作目录下 .future-self/ 已存在,但 profile.md 或 memory-summary.md 内容见 evals/files/malformed_profile.md,缺少'初始立场''长期摘要''近期行动索引'等必需分区标题) 用户说: 我现在不想收拾房间",
+      "expected_output": "发现现有存储格式明显不对(缺少必需分区标题),按'不存在'处理:先简单告知用户之前的记录读取出了问题;由于用户这句话本身是明确场景A,先给一次即兴三句式反应接住当前'不想收拾房间'的时刻,再顺势进入初始化,而不是尝试从残缺文本里拼凑信息或直接报错卡住；已有 raw log 不要被删除。",
+      "files": ["evals/files/malformed_profile.md"],
+      "expectations": [
+        "Claude识别出现有 profile 或 summary 缺少必需分区,没有强行从残缺内容里解析出'初始立场'等结构化信息",
+        "回应中简单提及之前的记录读取有问题/需要重新来一遍,而不是完全不解释就突然开始问卷",
+        "在初始化提问之前,先针对'不想收拾房间'给出一次场景A即兴反应",
+        "即兴反应遵守承认+点破+最小动作的三句式结构,不超过3句话",
+        "接下来走的是初始化流程,而不是假装存储完好并跳到日常对话流程",
+        "初始化完成后会重写损坏的 profile.md 或 memory-summary.md，使其恢复必需分区标题；如果使用 scaffold_memory.py，需要传入 --force",
+        "没有删除已有 raw-conversations/ 原始会话"
+      ]
+    },
+    {
+      "id": 10,
+      "prompt": "(前置状态: 当前工作目录下 .future-self/profile.md 和 .future-self/memory-summary.md 已存在,内容见 evals/files/sample_profile.md 与 evals/files/sample_summary.md) 用户说: 我今天把方案发出去了",
+      "expected_output": "场景B,但历史记录里没有直接对应'发方案'这件事的具体场景A记录,只有'长期摘要'里关于'出行前收拾行李反复拖延'的模式,与这次输入不直接相关。回应应该正常给出三句式确认,不应该为了'呼应记忆'而编造一个不存在的关联——如果确实没有任何相关记录或模式,不提及 profile 内容也是可以接受的,不需要强行牵扯。",
+      "files": ["evals/files/sample_profile.md", "evals/files/sample_summary.md"],
+      "expectations": [
+        "回应没有编造一条不存在的、关于'发方案'的历史记录来强行呼应",
+        "回应遵守场景B三句式结构(复述/代价转化/感谢),感谢句不超过15字",
+        "回应结尾没有追加新任务或'接下来'式建议"
+      ]
+    },
+    {
+      "id": 11,
+      "prompt": "(前置状态: 当前工作目录下 .future-self/profile.md、.future-self/memory-summary.md、raw-conversations/2026-07.md 已存在，且 raw log 中有一条 2026-07-01 15:30 的原始会话，summary 中也有对应近期索引) 用户说: 删除刚才15:30那段记录，不要保存它",
+      "expected_output": "Claude 识别这是用户明确要求删除历史的请求，不把它当作普通场景A/B回应；需要定位 raw log 中对应段落并删除或改写，同时同步删除或修正 memory-summary.md 中受影响的近期索引或长期摘要。删除是 raw log append-only 原则的明确例外。",
+      "expectations": [
+        "没有套用场景A/B三句式",
+        "定位并删除或改写 raw-conversations/2026-07.md 中 2026-07-01 15:30 对应原始会话",
+        "同步删除或修正 memory-summary.md 中指向这条 raw log 的索引或摘要",
+        "没有把这次删除请求本身写成新的普通行动记录"
+      ]
+    },
+    {
+      "id": 12,
+      "prompt": "(前置状态: 当前工作目录下 .future-self/memory-summary.md 中有一条近期行动索引指向 raw-conversations/2026-07.md#2026-07-01-15-30，但对应 raw log 文件不存在；用户说: 我刚把桌面收拾好了) Claude 生成回应并更新文件后运行 scripts/lint_memory.py，lint 报出 raw log 指针缺失。",
+      "expected_output": "Claude 不能在 lint 报错后直接结束；需要先修复 .future-self/ 的一致性，比如补写缺失 raw log 或修正/删除错误指针，再重新检查或确认结构恢复。",
+      "expectations": [
+        "识别 lint 报错是存储一致性问题",
+        "在结束前修复 raw log 指针缺失或对应索引",
+        "修复后再次运行或等价确认 scripts/lint_memory.py 不再报同一问题"
+      ]
+    },
+    {
+      "id": 13,
+      "prompt": "(前置状态: 当前工作目录下 .future-self/ 不存在，即完全冷启动，且用户这次的输入不是明确的场景A/B触发) 用户说: 问问未来的我，我想让你以后帮我盯着我拖延的毛病",
+      "expected_output": "Claude 走标准初始化流程：第一轮采集目标行为，并围绕该目标同轮轻量追问未来自己画像；之后询问语气(选择题)和讨厌的提醒方式(选择题，可多选)。不额外问'最容易在什么时刻后悔'作为独立必答题，也不在初始化阶段问场景B校准问题。",
+      "expectations": [
+        "初始化包含目标行为、未来自己画像、语气、讨厌的提醒方式这些必需信息块",
+        "目标行为和未来自己画像在同一轮自然采集,没有把画像做成多轮深挖",
+        "没有把'最容易在什么时刻后悔'当成独立必答题",
+        "语气问题以选择题形式呈现(类似A温和/B直接/C可以损我/D少说废话这样的选项)，而不是纯开放式提问",
+        "讨厌方式问题以选择题形式呈现且允许多选，而不是纯开放式提问",
+        "没有在初始化阶段问'有没有什么事看起来像放纵、其实是正当奖励'这类场景B校准问题",
+        "如果用户回答目标行为时没有主动提到情境/时刻信息，模型最多只追加一句明确说明'不确定也可以跳过'的轻量追问，不会把它当成强制必答项"
+      ]
+    },
+    {
+      "id": 14,
+      "prompt": "(前置状态: 当前工作目录下 .future-self/profile.md 内容见 evals/files/profile_with_b_exception.md，其中'场景B例外/奖励边界'已记录'完成当天工作后打一局游戏算正当奖励，不算放纵'；memory-summary.md 内容见 evals/files/sample_summary.md) 用户说: 今天工作都做完了，我刚打了一局游戏放松一下",
+      "expected_output": "场景B判断第一步优先查 profile 里已记录的场景B例外，这次游戏行为命中该例外，应按场景B正常处理并给出三句式回应，而不是套用'刷短视频'那种默认放纵假设去拒绝确认。",
+      "files": ["evals/files/profile_with_b_exception.md", "evals/files/sample_summary.md"],
+      "expectations": [
+        "回应识别出这次游戏行为命中 profile 里已记录的场景B例外（完成工作后的游戏=正当奖励），按场景B处理",
+        "回应遵守复述→代价转化→感谢的三句式结构，感谢句不超过15字",
+        "没有把这次游戏当成默认的放纵行为而拒绝确认或转为正常对话"
+      ]
+    },
+    {
+      "id": 15,
+      "prompt": "(前置状态: 当前工作目录下 .future-self/profile.md 内容见 evals/files/sample_profile.md，其中'场景B例外/奖励边界'是'暂无'；memory-summary.md 内容见 evals/files/sample_summary.md) 用户说: 今天该做的都做完了，刚打完一局游戏，算是休息一下",
+      "expected_output": "这件事在没有已知例外记录时是否有益是模糊的：用户给出了'今天该做的都做完了'这个客观两可信号，但 profile 尚无奖励边界。回应不应该套用完整的场景B三句式去感谢确认，而应该按正常对话回应，同时可以留一句轻量开放性说明邀请用户以后明确这类行为的定性，但不应该显得像制造新任务或追问。",
+      "files": ["evals/files/sample_profile.md", "evals/files/sample_summary.md"],
+      "expectations": [
+        "回应没有套用完整的场景B三句式(复述/代价转化/感谢)去确认或感谢这次打游戏",
+        "回应留了一句类似'如果这对你是固定的正当休息，可以直接说，以后按你的定义记'这样的开放性说明，而不是完全不提及、也不是直接下放纵或有益的定论",
+        "回应没有变成一个新的必答问题或给用户制造心理负担"
+      ]
+    },
+    {
+      "id": 16,
+      "prompt": "(紧接着上一条 eval 15 的场景，Claude 已经回应'这次我先不当场景B处理；如果这对你是固定的正当休息，可以直接说，以后我会按你的定义记') 用户说: 对，这就是我做完工作后的固定放松方式，不是拖延",
+      "expected_output": "Claude 应该把这条纠正持久化写入 .future-self/profile.md 的'场景B例外/奖励边界'部分，供以后场景B判断时优先引用；这个字段是稳定偏好，不受近期行动索引的压缩窗口约束，不会被自动折叠或删除。回应本身应该简短确认收到，不追加新任务或建议。",
+      "files": ["evals/files/sample_profile.md", "evals/files/sample_summary.md"],
+      "expectations": [
+        "对话结束后，.future-self/profile.md 的'场景B例外/奖励边界'部分新增了一条记录，反映'完成工作后打游戏算正当奖励，不算放纵'这个边界",
+        "这条记录被写入 profile.md，而不是 memory-summary.md 的近期行动索引部分",
+        "回应本身简短确认收到这条边界，没有追加新任务、建议或说教"
+      ]
+    },
+    {
+      "id": 17,
+      "prompt": "(前置状态: 当前工作目录下 .future-self/profile.md 内容见 evals/files/sample_profile.md，其中'未来自己画像'写着'3年后的我出门前一天晚上已经把行李箱摊开，早上只需要确认证件和充电器，不再靠慌张把自己推着走'；memory-summary.md 内容见 evals/files/sample_summary.md) 用户说: 又到睡前了，我还是不想收拾行李",
+      "expected_output": "Claude 识别为场景A，读取 profile 里的未来自己画像，并在[点破]句或[最小动作]句自然呼应'不再靠慌张把自己推着走'这个画像锚点；回应仍严格是承认/点破/最小动作三句式，不为了引用画像而变长。",
+      "files": ["evals/files/sample_profile.md", "evals/files/sample_summary.md"],
+      "expectations": [
+        "回应遵守场景A三句式结构,不超过3句话",
+        "回应自然引用或改写了 profile 中未来自己画像的核心差异,例如'不用再靠早上的慌张推着走'",
+        "画像引用服务于当前'睡前不想收拾行李'这个场景,不是硬塞无关自我描述",
+        "没有出现羞辱式点破或'你就是懒'这类人格标签"
+      ]
+    },
+    {
+      "id": 18,
+      "prompt": "用户说: 我刚做完手术，医生说要休息两周",
+      "expected_output": "这句话包含'刚做完'但不是请求未来自己确认一个对未来有益的小习惯，也不是拖延/放纵场景。Claude 不应触发 future-self 的场景B三句式，不应写入 .future-self/ 记忆，而应按普通对话处理。",
+      "expectations": [
+        "回应没有套用场景B的复述/代价转化/感谢三句式",
+        "回应没有把'刚做完手术'当成习惯完成来感谢确认",
+        "没有创建或更新 .future-self/profile.md、memory-summary.md、raw-conversations/",
+        "没有因为裸露的'刚做完'触发初始化流程"
+      ]
+    }
+  ]
+}
