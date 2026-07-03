@@ -1,6 +1,6 @@
-# future-self
+# future-self-skill
 
-`future-self` 是一个 Agent Skill，用“未来的自己”的口吻处理两个很窄的时刻：
+`future-self-skill` 是 `future-self` Agent Skill 的开源项目，用“未来的自己”的口吻处理两个很窄的时刻：
 
 - 行动前：用户正在拖延、逃避、想放纵一件对未来有益的小事时，给三句话拦截。
 - 行动后：用户刚完成一件对未来有益的小事时，给三句话确认和感谢。
