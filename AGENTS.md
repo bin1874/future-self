@@ -34,7 +34,7 @@ Important rules:
 
 Use scripts for deterministic storage behavior.
 
-- `scripts/scaffold_memory.py` creates `.future-self/`, writes initial files, writes `.future-self/.gitignore`, warns if memory is already tracked by Git, and backs up overwritten files when `--force` is used.
+- `scripts/scaffold_memory.py` creates `.future-self/`, writes initial files, writes `.future-self/.gitignore`, warns if memory is already tracked by Git, and backs up overwritten files when `--force`, `--force-profile`, or `--force-summary` is used.
 - `scripts/update_memory.py` appends raw logs, inserts recent-index entries, generates stable record ids, backfills A/B completion, detects window compression, and writes private file permissions.
 - `scripts/lint_memory.py` validates required sections, recent-entry headers, record ids, raw pointers, raw log existence, and 15-entry/14-day window constraints.
 - `scripts/install.py` installs the skill into Codex and/or Claude Code skill directories.

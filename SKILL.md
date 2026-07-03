@@ -38,7 +38,7 @@ description: 仅当用户明确想让"未来的自己"督促/拦截/确认某个
 工具脚本:
 
 - `scripts/scaffold_memory.py`:创建 `.future-self/` 标准目录和初始文件,可选写入冷启动时的第一条场景记录
-- `scripts/update_memory.py`:追加 raw log、插入/更新近期行动索引、生成稳定 record id、处理窗口压缩的确定性部分
+- `scripts/update_memory.py`:以 staged write 更新 raw log 和 summary、插入/更新近期行动索引、生成稳定 record id、处理窗口压缩的确定性部分
 - `scripts/lint_memory.py`:检查 profile/summary/raw log 的结构一致性、近期行动索引窗口、raw log 指针是否有效
 - `scripts/install.py`:把这个 skill 安装或链接到 Codex 和 Claude Code 的用户级 skills 目录
 
@@ -78,7 +78,7 @@ python3 "<skill-dir>/scripts/lint_memory.py" "$PWD"
 
 - 没有 `.future-self/`:进入"初始化流程"
 - 有 `.future-self/`,且 `profile.md` 和 `memory-summary.md` 格式正常:进入"日常对话流程"
-- 有 `.future-self/`,但关键文件缺失或格式明显不对:按"不存在"处理,重新初始化；使用 `scaffold_memory.py --force` 重写 `profile.md` 和 `memory-summary.md`,但不要删除已有 raw log
+- 有 `.future-self/`,但关键文件缺失或格式明显不对:按"不存在"处理,重新初始化；先判断是 `profile.md` 损坏、`memory-summary.md` 损坏,还是两者都损坏。优先只重写真正损坏的文件:用 `scaffold_memory.py --force-profile` 重写 `profile.md`,或用 `scaffold_memory.py --force-summary` 重写 `memory-summary.md`。只有两个关键文件都损坏,或用户明确接受重建时,才用 `scaffold_memory.py --force` 同时重写两者。所有 force 模式都不要删除已有 raw log,脚本会在覆盖前为被覆盖文件生成 `.bak-YYYYMMDD-HHMMSS` 备份
 - 有旧版 `.future-self/profile.md`,但只是缺少"场景B例外/奖励边界":不要当作损坏,也不要重初始化；把这部分视为空记录,等用户明确纠正场景B判断时再追加该分区
 - 只有旧版 `future-self-profile.md`:把它当作旧单文件存储。先读出"初始立场"和"长期摘要/近期行动记录",分别迁移到 `.future-self/profile.md` 和 `.future-self/memory-summary.md`；原始会话在旧文件里并不存在,不要编造 raw log,只在当月 raw log 里写一条"从旧版单文件迁移"的系统记录
 
@@ -105,7 +105,7 @@ python3 "<skill-dir>/scripts/lint_memory.py" "$PWD"
 问完之后:
 
 1. 先用一句轻量话告知存储契约:记录会保存在当前目录的 `./.future-self/` 明文文件里；用户随时可以说"这次别记录"或"删掉记录"
-2. 优先运行 `python3 "<skill-dir>/scripts/scaffold_memory.py" "$PWD" --target "..." --target-type "坏习惯|新习惯|其他" --future-self "..." --tone "..." --dislike "..."` 创建 `.future-self/` 和初始文件;如果用户回答了"容易发生的时刻",追加 `--moment "..."`,没问到或用户跳过就不传这个参数;如果是在修复格式损坏的 profile/summary,加 `--force`，脚本会在覆盖前为旧文件生成 `.bak-YYYYMMDD-HHMMSS` 备份
+2. 优先运行 `python3 "<skill-dir>/scripts/scaffold_memory.py" "$PWD" --target "..." --target-type "坏习惯|新习惯|其他" --future-self "..." --tone "..." --dislike "..."` 创建 `.future-self/` 和初始文件;如果用户回答了"容易发生的时刻",追加 `--moment "..."`,没问到或用户跳过就不传这个参数;如果是在修复格式损坏的 profile/summary,优先按坏掉的文件选择 `--force-profile` 或 `--force-summary`;只有两个关键文件都坏了才用 `--force`。脚本会在覆盖前为被覆盖文件生成 `.bak-YYYYMMDD-HHMMSS` 备份
 3. 如果初始化开始前用户已经给过具体场景 A/B,运行脚本时同时传入 `--initial-scene`、`--initial-user-input`、`--initial-response`,并在场景 A 时传入 `--initial-minimal-action`
 4. 如果脚本不可用,再按模板手动创建 `.future-self/profile.md`、`.future-self/memory-summary.md` 和 `.future-self/raw-conversations/YYYY-MM.md`
 5. 告诉用户已经记好了,以后可以直接说"我现在不想收拾行李"这类具体的话,不用每次重新介绍自己
@@ -196,7 +196,7 @@ python3 "<skill-dir>/scripts/lint_memory.py" "$PWD"
 2. **更新 `memory-summary.md`**:脚本生成稳定 record id,在"近期行动索引"最上方插入一条新记录；summary/profile 中来自用户的字段做结构字符中性化,避免用户原话破坏 Markdown 结构
 3. **补全完成关系**:如果这次是场景 B,且第二步找到了直接呼应的某条具体场景 A 记录,把那条 A 记录的"后续是否被确认完成"字段改成"已确认,见 [这次B记录的 record id 或日期]"
 4. **压缩 summary 窗口**:近期行动索引只保留最近 15 条,且所有记录都在 14 天内；脚本先输出待折叠 entries,模型基于这些 entries 生成新的"长期摘要",再由脚本写回并删除窗口外索引
-5. **持久化场景B边界纠正**:如果这次对话里用户明确纠正了场景B的判断(见"第一步"里的场景B例外机制),把这条边界写进 `.future-self/profile.md` 的"场景B例外/奖励边界"部分——这是稳定偏好,不属于"近期行动索引"的压缩范围,不会因窗口机制被折叠或删除
+5. **持久化场景B边界纠正**:如果这次对话里用户明确纠正了场景B的判断(见"第一步"里的场景B例外机制),只编辑 `.future-self/profile.md` 的"场景B例外/奖励边界"部分,把这条边界作为稳定偏好写进去。这个低频编辑可以由模型直接完成,但不得改动 profile 其他分区,不得写入 `memory-summary.md` 的近期索引,也不会因窗口机制被折叠或删除。编辑后运行 `scripts/lint_memory.py "$PWD"` 或做等价结构检查；如果实际发现这种手动编辑容易破坏结构,再考虑脚本化
 
 raw log 是 append-only 的原始材料,不要因为 summary 压缩就删除 raw log。用户明确要求删除或改写某段历史时是例外,按下面的删除/修正流程处理。summary 的长期摘要保持在约 200-300 字以内,记录模式而不是事件堆积。
 

@@ -36,6 +36,8 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--initial-related-record", default="无")
     parser.add_argument("--timestamp", default=None, help="YYYY-MM-DD HH:MM; defaults to local time")
     parser.add_argument("--force", action="store_true", help="overwrite profile.md and memory-summary.md, preserving raw logs")
+    parser.add_argument("--force-profile", action="store_true", help="overwrite only profile.md, preserving memory-summary.md and raw logs")
+    parser.add_argument("--force-summary", action="store_true", help="overwrite only memory-summary.md, preserving profile.md and raw logs")
     return parser.parse_args()
 
 
@@ -53,8 +55,10 @@ def main() -> int:
     anchor = timestamp.strftime("%Y-%m-%d-%H-%M")
     record_id = make_record_id(timestamp, args.initial_scene or "init", args.initial_user_input)
 
-    write_file(memory_dir / "profile.md", profile_text(args), force=args.force, backup=args.force)
-    write_file(memory_dir / "memory-summary.md", summary_text(args, timestamp, month, anchor, record_id), force=args.force, backup=args.force)
+    force_profile = args.force or args.force_profile
+    force_summary = args.force or args.force_summary
+    write_file(memory_dir / "profile.md", profile_text(args), force=force_profile, backup=force_profile)
+    write_file(memory_dir / "memory-summary.md", summary_text(args, timestamp, month, anchor, record_id), force=force_summary, backup=force_summary)
 
     if args.initial_scene and args.initial_user_input:
         append_raw_log(

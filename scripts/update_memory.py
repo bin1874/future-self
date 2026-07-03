@@ -15,6 +15,7 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import os
 import re
 import sys
 from dataclasses import dataclass
@@ -79,8 +80,9 @@ def main() -> int:
         planned_summary = replace_entries(planned_summary, kept)
         planned_summary = replace_long_term_summary(planned_summary, args.long_term_summary)
 
-    append_raw_log(
-        raw_dir / f"{month}.md",
+    raw_path = raw_dir / f"{month}.md"
+    planned_raw = planned_raw_log_text(
+        raw_path,
         timestamp=timestamp,
         scene=f"场景{args.scene}",
         writes_summary="是",
@@ -88,7 +90,7 @@ def main() -> int:
         user_input=args.user_input,
         response=args.response,
     )
-    write_private(summary_path, planned_summary)
+    commit_memory_update(summary_path, planned_summary, raw_path, planned_raw)
     print(json.dumps({"record_id": record_id, "raw_location": f"raw-conversations/{month}.md#{anchor}"}, ensure_ascii=False))
     return 0
 
@@ -268,7 +270,7 @@ def fence_block(text: str) -> str:
     return f"{fence}text\n{text}\n{fence}"
 
 
-def append_raw_log(
+def planned_raw_log_text(
     path: Path,
     *,
     timestamp: datetime,
@@ -277,16 +279,30 @@ def append_raw_log(
     related_record: str,
     user_input: str,
     response: str,
-) -> None:
-    if not path.exists():
-        path.write_text(f"# 未来自己 - Raw Conversations - {path.stem}\n\n", encoding="utf-8")
-        try:
-            path.chmod(0o600)
-        except OSError:
-            pass
-    with path.open("a", encoding="utf-8") as handle:
-        handle.write(
-            f"""---
+) -> str:
+    existing = path.read_text(encoding="utf-8") if path.exists() else f"# 未来自己 - Raw Conversations - {path.stem}\n\n"
+    if existing and not existing.endswith("\n"):
+        existing += "\n"
+    return existing + raw_log_entry(
+        timestamp=timestamp,
+        scene=scene,
+        writes_summary=writes_summary,
+        related_record=related_record,
+        user_input=user_input,
+        response=response,
+    )
+
+
+def raw_log_entry(
+    *,
+    timestamp: datetime,
+    scene: str,
+    writes_summary: str,
+    related_record: str,
+    user_input: str,
+    response: str,
+) -> str:
+    return f"""---
 
 ## {timestamp.strftime('%Y-%m-%d %H:%M')}
 - 场景判断: {scene}
@@ -299,14 +315,61 @@ def append_raw_log(
 ### 回应原文
 {fence_block(response)}
 """
-        )
+
+
+def commit_memory_update(summary_path: Path, planned_summary: str, raw_path: Path, planned_raw: str) -> None:
+    """Commit summary and raw log together, rolling raw back if summary replace fails."""
+    raw_existed = raw_path.exists()
+    raw_original = raw_path.read_text(encoding="utf-8") if raw_existed else ""
+    summary_tmp = write_private_temp(summary_path, planned_summary)
+    raw_tmp = write_private_temp(raw_path, planned_raw)
+    raw_committed = False
+    try:
+        os.replace(raw_tmp, raw_path)
+        chmod_private(raw_path)
+        raw_committed = True
+        os.replace(summary_tmp, summary_path)
+        chmod_private(summary_path)
+    except Exception:
+        if raw_committed:
+            try:
+                if raw_existed:
+                    rollback_tmp = write_private_temp(raw_path, raw_original)
+                    os.replace(rollback_tmp, raw_path)
+                    chmod_private(raw_path)
+                else:
+                    raw_path.unlink(missing_ok=True)
+            except OSError:
+                pass
+        cleanup_temp(summary_tmp)
+        cleanup_temp(raw_tmp)
+        raise
 
 
 def write_private(path: Path, content: str) -> None:
     path.write_text(content, encoding="utf-8")
+    chmod_private(path)
+
+
+def write_private_temp(path: Path, content: str) -> Path:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    temp_path = path.with_name(f".{path.name}.tmp-{os.getpid()}-{hashlib.sha1(str(path).encode('utf-8')).hexdigest()[:8]}")
+    temp_path.write_text(content, encoding="utf-8")
+    chmod_private(temp_path)
+    return temp_path
+
+
+def chmod_private(path: Path) -> None:
     try:
         path.chmod(0o600)
     except OSError:
+        pass
+
+
+def cleanup_temp(path: Path) -> None:
+    try:
+        path.unlink()
+    except FileNotFoundError:
         pass
 
 

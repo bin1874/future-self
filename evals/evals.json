@@ -115,7 +115,7 @@
         "在初始化提问之前,先针对'不想收拾房间'给出一次场景A即兴反应",
         "即兴反应遵守承认+点破+最小动作的三句式结构,不超过3句话",
         "接下来走的是初始化流程,而不是假装存储完好并跳到日常对话流程",
-        "初始化完成后会重写损坏的 profile.md 或 memory-summary.md，使其恢复必需分区标题；如果使用 scaffold_memory.py，需要传入 --force",
+        "初始化完成后会重写损坏的 profile.md 或 memory-summary.md，使其恢复必需分区标题；如果使用 scaffold_memory.py，优先按损坏文件传入 --force-profile 或 --force-summary，只有两者都损坏时才传入 --force",
         "没有删除已有 raw-conversations/ 原始会话"
       ]
     },
